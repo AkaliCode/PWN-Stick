@@ -11,8 +11,11 @@ embedded-hal = { version = "0.2.5", features = ["unproven"] }
 defmt = "0.3"
 defmt-rtt = "0.3"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
+usb-device = "0.2.9"
+usbd-hid = "0.5.1"
+usbd-serial = "0.1.1"
 
-# We're using a Pico by default on this template
+# I'm using a Pico by default
 rp-pico = "0.5"
 # If we want to use the trinkey
 # adafruit-trinkey-rp2040 = "0.3"
@@ -20,6 +23,11 @@ rp-pico = "0.5"
 # If you're not going to use a Board Support Package you'll need these:
 # rp2040-hal = { version="0.6", features=["rt"] }
 # rp2040-boot2 = "0.2"
+
+critical-section = "1.1.1"
+rp2040-hal = "0.6.0"
+[features]
+rp2040-e5 = ["rp2040-hal/rp2040-e5"]
 
 # cargo build/run
 [profile.dev]
