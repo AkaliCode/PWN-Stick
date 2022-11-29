@@ -26,7 +26,6 @@ use hal::{
 
 use pac::interrupt;
 
-
 // USB Imports
 use usb_device::{class_prelude::*, prelude::*};
 use usbd_hid::descriptor::generator_prelude::*;
@@ -42,8 +41,8 @@ fn main() -> ! {
     info!("Program start");
     // mutable variable für unseren Peripheral Access Crate
     let mut pac = pac::Peripherals::take().unwrap();
-    // Unser Wachhund fifi
-    let mut fifi = Watchdog::new(pac.WATCHDOG);
+    // Unser Wachhund doggy
+    let mut doggy = Watchdog::new(pac.WATCHDOG);
 
     // Clock config
     let external_xtal_freq_hz = 12_000_000u32;
@@ -54,32 +53,32 @@ fn main() -> ! {
         pac.PLL_SYS,
         pac.PLL_USB,
         &mut pac.RESETS,
-        &mut fifi,
-        )
-        .ok()
-        .unwrap();
+        &mut doggy,
+    )
+    .ok()
+    .unwrap();
 
     //#[cfg(feature = "rp2040-e5")]
     //{
-        // sio (single cycle IO block) Burschen ich hab auch keinen Plan was das ist
-        let sio = Sio::new(pac.SIO);
-        // Unsere werten Pins
-        let pins = board::Pins::new(
-            pac.IO_BANK0,
-            pac.PADS_BANK0,
-            sio.gpio_bank0,
-            &mut pac.RESETS,
-            );
+    // sio (single cycle IO block) Burschen ich hab auch keinen Plan was das ist
+    let sio = Sio::new(pac.SIO);
+    // Unsere werten Pins
+    let pins = board::Pins::new(
+        pac.IO_BANK0,
+        pac.PADS_BANK0,
+        sio.gpio_bank0,
+        &mut pac.RESETS,
+    );
     //}
 
     // USB driver setup
     let usb_bus = UsbBusAllocator::new(hal::usb::UsbBus::new(
-            pac.USBCTRL_REGS,
-            pac.USBCTRL_DPRAM,
-            clocks.usb_clock,
-            true,
-            &mut pac.RESETS,
-            ));
+        pac.USBCTRL_REGS,
+        pac.USBCTRL_DPRAM,
+        clocks.usb_clock,
+        true,
+        &mut pac.RESETS,
+    ));
     // DON'T FUCK WITH THAT
     unsafe {
         // Only safe because interupts haven't been started yet
@@ -101,20 +100,21 @@ fn main() -> ! {
         .serial_number("SorryNotSorry")
         .device_class(0) // Steht für "0 Plan wofür das steht"
         .build();
-    unsafe { // Da hammas wieder
-             // Nur safe wenn die interrupts nicht gestartet sind, bla bla bla
+    unsafe {
+        // Da hammas wieder
+        // Nur safe wenn die interrupts nicht gestartet sind, bla bla bla
         USB_DEVICE = Some(usb_dev);
     }
 
-    unsafe { // letztes mal für's Erste 
-             // Des issa jetzt, der berüchtigte Interrupt
+    unsafe {
+        // letztes mal für's Erste
+        // Des issa jetzt, der berüchtigte Interrupt
         pac::NVIC::unmask(hal::pac::Interrupt::USBCTRL_IRQ);
     }
 
-    // Jetzt nur noch core und delay 
+    // Jetzt nur noch core und delay
     let core = pac::CorePeripherals::take().unwrap();
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
-
 
     let mut led_pin = pins.led.into_push_pull_output();
     let delay_time: u32 = 10_000;
@@ -125,51 +125,46 @@ fn main() -> ! {
         delay.delay_ms(1_000);
         led_pin.set_low().unwrap();
         delay.delay_ms(1_000);
-        push_keyboard_report(
-            KeyboardReport {
-                modifier:0,
-                leds: 0,
-                reserved: 0,
-                keycodes: [1,0,0,0,0,0]
-            }
-            ).ok().unwrap_or(0);
+        push_keyboard_report(KeyboardReport {
+            modifier: 0,
+            leds: 0,
+            reserved: 0,
+            keycodes: [1, 0, 0, 0, 0, 0],
+        })
+        .ok()
+        .unwrap_or(0);
 
         // delay.delay_ms(100);
 
-        push_keyboard_report(
-            KeyboardReport {
-                modifier:0,
-                leds: 0,
-                reserved: 0,
-                keycodes: [2,0,0,0,0,0]
-            }
-            ).ok().unwrap_or(0);
-
+        push_keyboard_report(KeyboardReport {
+            modifier: 0,
+            leds: 0,
+            reserved: 0,
+            keycodes: [2, 0, 0, 0, 0, 0],
+        })
+        .ok()
+        .unwrap_or(0);
     }
 
-
     /// We do this with interrupts disabled, to avoid a race hazard with the USB IRQ.
-fn push_keyboard_report(report: KeyboardReport) -> Result<usize, usb_device::UsbError> {
-    critical_section::with(|_| unsafe {
-        // Now interrupts are disabled, grab the global variable and, if
-        // available, send it a HID report
-        USB_HID.as_mut().map(|hid| hid.push_input(&report))
-    })
-    .unwrap()
-}
+    fn push_keyboard_report(report: KeyboardReport) -> Result<usize, usb_device::UsbError> {
+        critical_section::with(|_| unsafe {
+            // Now interrupts are disabled, grab the global variable and, if
+            // available, send it a HID report
+            USB_HID.as_mut().map(|hid| hid.push_input(&report))
+        })
+        .unwrap()
+    }
 
-/// This function is called whenever the USB Hardware generates an Interrupt
-/// Request.
-#[allow(non_snake_case)]
-#[interrupt]
-unsafe fn USBCTRL_IRQ() {
-    // Handle USB request
-    let usb_dev = USB_DEVICE.as_mut().unwrap();
-    let usb_hid = USB_HID.as_mut().unwrap();
-    usb_dev.poll(&mut [usb_hid]);
-}
-
-
-
+    /// This function is called whenever the USB Hardware generates an Interrupt
+    /// Request.
+    #[allow(non_snake_case)]
+    #[interrupt]
+    unsafe fn USBCTRL_IRQ() {
+        // Handle USB request
+        let usb_dev = USB_DEVICE.as_mut().unwrap();
+        let usb_hid = USB_HID.as_mut().unwrap();
+        usb_dev.poll(&mut [usb_hid]);
+    }
 }
 // Des woas
