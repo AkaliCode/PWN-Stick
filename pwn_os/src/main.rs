@@ -18,6 +18,7 @@ use rp_pico as board;
 // Some of the more often used Imports
 use board::hal;
 use hal::{
+    prelude::*,
     clocks::{init_clocks_and_plls, Clock},
     pac,
     sio::Sio,
@@ -38,16 +39,14 @@ static mut USB_HID: Option<HIDClass<hal::usb::UsbBus>> = None;
 
 #[entry]
 fn main() -> ! {
-    info!("Program start");
     // mutable variable für unseren Peripheral Access Crate
     let mut pac = pac::Peripherals::take().unwrap();
     // Unser Wachhund doggy
     let mut doggy = Watchdog::new(pac.WATCHDOG);
 
     // Clock config
-    let external_xtal_freq_hz = 12_000_000u32;
     let clocks = init_clocks_and_plls(
-        external_xtal_freq_hz,
+        board::XOSC_CRYSTAL_FREQ,
         pac.XOSC,
         pac.CLOCKS,
         pac.PLL_SYS,
@@ -58,8 +57,6 @@ fn main() -> ! {
     .ok()
     .unwrap();
 
-    //#[cfg(feature = "rp2040-e5")]
-    //{
     // sio (single cycle IO block) Burschen ich hab auch keinen Plan was das ist
     let sio = Sio::new(pac.SIO);
     // Unsere werten Pins
@@ -69,7 +66,6 @@ fn main() -> ! {
         sio.gpio_bank0,
         &mut pac.RESETS,
     );
-    //}
 
     // USB driver setup
     let usb_bus = UsbBusAllocator::new(hal::usb::UsbBus::new(
@@ -87,18 +83,19 @@ fn main() -> ! {
 
     // Siehst du den unsafe Bums da? NICHT BERÜHREN!
     let bus_ref = unsafe { USB_BUS.as_ref().unwrap() };
-    let usb_hid = HIDClass::new(bus_ref, KeyboardReport::desc(), 60);
+    let usb_hid = HIDClass::new(bus_ref, KeyboardReport::desc(), 10); // Last thing is the poll
+                                                                      // rate in ms
     unsafe {
         // Also only safe cus interrupts r not started
         USB_HID = Some(usb_hid);
     }
 
     // Jetzt faken wir mal so ein Universelles Serielles Buss Geraet
-    let usb_dev = UsbDeviceBuilder::new(bus_ref, UsbVidPid(0x16c0, 0x27da))
-        .manufacturer("OurPC Inc.")
+    let usb_dev = UsbDeviceBuilder::new(bus_ref, UsbVidPid(0x046D, 0xC315))
+        .manufacturer("OurPC, Inc.")
         .product("UrLastUSB")
-        .serial_number("SorryNotSorry")
-        .device_class(0) // Steht für "0 Plan wofür das steht"
+        .serial_number("TEST")
+        .device_class(0) // 0 steht für "0 Plan wofür das steht"
         .build();
     unsafe {
         // Da hammas wieder
@@ -116,31 +113,31 @@ fn main() -> ! {
     let core = pac::CorePeripherals::take().unwrap();
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
 
-    let mut led_pin = pins.led.into_push_pull_output();
-    let delay_time: u32 = 10_000;
+    // Blinky thingy
+    // let mut led_pin = pins.led.into_push_pull_output();
 
     loop {
-        delay.delay_ms(10_000);
-        led_pin.set_high().unwrap();
-        delay.delay_ms(1_000);
-        led_pin.set_low().unwrap();
-        delay.delay_ms(1_000);
+        // Quick delay
+        delay.delay_ms(10);
+        // Setzt den nächsten Keyboard Report. In diesem Fall Schreibt das ein 'a'
         push_keyboard_report(KeyboardReport {
             modifier: 0,
             leds: 0,
             reserved: 0,
-            keycodes: [1, 0, 0, 0, 0, 0],
+            keycodes: [4, 0, 0, 0, 0, 0],
         })
         .ok()
         .unwrap_or(0);
 
-        // delay.delay_ms(100);
+        // Wieder kurz waren weil unsere Tastatur nur ungefähr alle 10ms abgefragt wird
+        delay.delay_ms(10);
 
+        // Und den nächsten report auf 000000 setzen
         push_keyboard_report(KeyboardReport {
             modifier: 0,
             leds: 0,
             reserved: 0,
-            keycodes: [2, 0, 0, 0, 0, 0],
+            keycodes: [0, 0, 0, 0, 0, 0],
         })
         .ok()
         .unwrap_or(0);
