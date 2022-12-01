@@ -4,7 +4,7 @@
 #![no_main]
 
 use board::entry;
-use defmt::*;
+use cortex_m::prelude::_embedded_hal_blocking_delay_DelayMs;
 use defmt_rtt as _;
 use embedded_hal::digital::v2::OutputPin;
 use panic_probe as _;
@@ -18,7 +18,6 @@ use rp_pico as board;
 // Some of the more often used Imports
 use board::hal;
 use hal::{
-    prelude::*,
     clocks::{init_clocks_and_plls, Clock},
     pac,
     sio::Sio,
@@ -116,33 +115,32 @@ fn main() -> ! {
     // Blinky thingy
     // let mut led_pin = pins.led.into_push_pull_output();
 
-    loop {
-        // Quick delay
-        delay.delay_ms(1);
-        // Setzt den nächsten Keyboard Report. In diesem Fall Schreibt das ein 'a'
-        push_keyboard_report(KeyboardReport {
-            modifier: 0,
-            leds: 0,
-            reserved: 0,
-            keycodes: [4, 0, 0, 0, 0, 0],
-        })
-        .ok()
-        .unwrap_or(0);
-
-        // Wieder kurz waren weil unsere Tastatur nur ungefähr alle 1ms abgefragt wird
-        delay.delay_ms(1);
-
-        // Und den nächsten report auf 000000 setzen
-        push_keyboard_report(KeyboardReport {
-            modifier: 0,
-            leds: 0,
-            reserved: 0,
-            keycodes: [0, 0, 0, 0, 0, 0],
-        })
-        .ok()
-        .unwrap_or(0);
+    // Weirder versuch einer ersten einfachen type_letter Funktion. Absolut nicht zufrieden mit dem
+    // Ansatz, aber für alphanumerische chars und Space funktioniert es schon mal. Timing ist das
+    // größte Proble, wenn keine USB request kommt befor der nächste Report gepusht wird, wird der
+    // Character einfach nicht getippt. Deswegen habe ich den delay in dem Beispiel einfach auf 1.2
+    // ms gesetzt obwohl die pollrate 1ms ist.
+    fn type_letter(letter: char){
+        let mut modifier: u8 = 0;
+        let n: u8 = match letter {
+            c @ 'a'..='z' => c as u8 -b'a' +4,
+            c @ 'A'..='Z' => {modifier +=2; c as u8 -b'A' +4},
+            ' ' => 0x2C,
+            _ => 0,
+        };
+        push_keyboard_report(KeyboardReport { modifier, reserved: 0, leds: 0, keycodes: [n, 0, 0, 0, 0, 0]}).ok().unwrap_or(0);
     }
 
+    delay.delay_ms(1_000);
+
+    // For all eternity (oder bis ich es abstecke)
+    loop {
+        for c in "PWN Stick ".chars() {
+            delay.delay_us(1_200);
+            type_letter(c);
+        }
+    }
+    
     /// We do this with interrupts disabled, to avoid a race hazard with the USB IRQ.
     fn push_keyboard_report(report: KeyboardReport) -> Result<usize, usb_device::UsbError> {
         critical_section::with(|_| unsafe {
@@ -157,11 +155,13 @@ fn main() -> ! {
     /// Request.
     #[allow(non_snake_case)]
     #[interrupt]
-    unsafe fn USBCTRL_IRQ() {
-        // Handle USB request
-        let usb_dev = USB_DEVICE.as_mut().unwrap();
-        let usb_hid = USB_HID.as_mut().unwrap();
-        usb_dev.poll(&mut [usb_hid]);
+    fn USBCTRL_IRQ() {
+        unsafe{
+            // Handle USB request
+            let usb_dev = USB_DEVICE.as_mut().unwrap();
+            let usb_hid = USB_HID.as_mut().unwrap();
+            usb_dev.poll(&mut [usb_hid]);
+        }
     }
 }
 // Des woas
