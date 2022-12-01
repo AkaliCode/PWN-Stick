@@ -83,7 +83,7 @@ fn main() -> ! {
 
     // Siehst du den unsafe Bums da? NICHT BERÜHREN!
     let bus_ref = unsafe { USB_BUS.as_ref().unwrap() };
-    let usb_hid = HIDClass::new(bus_ref, KeyboardReport::desc(), 10); // Last thing is the poll
+    let usb_hid = HIDClass::new(bus_ref, KeyboardReport::desc(), 1); // Last thing is the poll
                                                                       // rate in ms
     unsafe {
         // Also only safe cus interrupts r not started
@@ -118,7 +118,7 @@ fn main() -> ! {
 
     loop {
         // Quick delay
-        delay.delay_ms(10);
+        delay.delay_ms(1);
         // Setzt den nächsten Keyboard Report. In diesem Fall Schreibt das ein 'a'
         push_keyboard_report(KeyboardReport {
             modifier: 0,
@@ -129,8 +129,8 @@ fn main() -> ! {
         .ok()
         .unwrap_or(0);
 
-        // Wieder kurz waren weil unsere Tastatur nur ungefähr alle 10ms abgefragt wird
-        delay.delay_ms(10);
+        // Wieder kurz waren weil unsere Tastatur nur ungefähr alle 1ms abgefragt wird
+        delay.delay_ms(1);
 
         // Und den nächsten report auf 000000 setzen
         push_keyboard_report(KeyboardReport {
