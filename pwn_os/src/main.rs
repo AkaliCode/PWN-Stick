@@ -198,6 +198,8 @@ fn main() -> ! {
         let n: u8 = match letter {
             c @ 'a'..='z' => c as u8 -b'a' +4,
             c @ 'A'..='Z' => {modifier |=2; c as u8 -b'A' +4},
+            d @ '1'..='9' => d as u8 -b'1' +0x1E,
+            '0' => 0x27,
             ' ' => 0x2C,
             _ => 0,
         };
@@ -236,7 +238,7 @@ fn main() -> ! {
 
     // For all eternity (oder bis ich es abstecke)
     loop {
-        for c in "PWN Stick ".chars() {
+        for c in "PWN Stick 0123456789 ".chars() {
             delay.delay_us(1_200);
             push_keyboard_report(
                 get_letter_report(c)
