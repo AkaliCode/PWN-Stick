@@ -224,17 +224,36 @@ fn main() -> ! {
         }
     }
 
+
     
 
     delay.delay_ms(1_000);
+
+    let instruction_array = [
+        Instruction {
+            report: get_letter_report('a'),
+            time_us: 0,
+        },
+        Instruction {
+            report: get_letter_report(' '),
+            time_us: 0,
+        },
+        Instruction {
+            report: get_empty_report(),
+            time_us: 3_000_000,
+        }
+    ];
+
+    let min_time = 1_200;
+
 
       //======================//
      //== For all eternity ==//
     //======================//
     loop {
-        for c in "PWN Stick 0123456789 ".chars() {
-            delay.delay_us(1_200);
-            push_keyboard_report(get_letter_report(c)).ok().unwrap_or(0);
+        for ins in instruction_array.as_slice(){
+            push_keyboard_report(ins.report).ok().unwrap_or(0);
+            delay.delay_us(if ins.time_us < min_time {min_time} else {ins.time_us} );
         }
     }
 
