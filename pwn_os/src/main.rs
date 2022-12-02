@@ -121,6 +121,8 @@ fn main() -> ! {
         time_us: u32,
     }
 
+    // ☟☟☟ Modifiers ☟☟☟
+
     // Meine Damen und Herren: der right Shift Bit Bit-shifter
     fn l_shift(kr: KeyboardReport) -> KeyboardReport {
         let mut modifier = kr.modifier;
@@ -178,6 +180,7 @@ fn main() -> ! {
     }
 
 
+    // ☟☟☟ Simple Reports ☟☟☟
 
     // Gets you a simple Enter Report
     fn get_enter_report() -> KeyboardReport {
@@ -197,7 +200,7 @@ fn main() -> ! {
         }
     }
 
-    // Makes a KeyboardReport out of an letter.
+    // Makes a KeyboardReport out of a letter.
     // IMPORTANT: not all characters are supported at the moment, and I don't check if the character you
     // enter is. If it does not have a case for that character it just returns an empty report.
     fn get_letter_report(letter: char) -> KeyboardReport {
@@ -221,9 +224,9 @@ fn main() -> ! {
         }
     }
 
+    
+
     delay.delay_ms(1_000);
-
-
 
       //======================//
      //== For all eternity ==//
