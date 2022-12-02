@@ -112,6 +112,43 @@ fn main() -> ! {
     let core = pac::CorePeripherals::take().unwrap();
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
 
+
+
+
+
+    // enum Modifier{
+    //     GUI,
+    //     ALT,
+    //     CTRL,
+    //     RGUI,
+    //     RALT,
+    //     RCTRL,
+    // }
+    //
+    // enum Instruction {
+    //     WaitMs(u32),
+    //     WaitS(u32),
+    //     Keypress(char),
+    //     Enter(),
+    //     ESC(),
+    //     BCKSPC(),
+    //     DEL(),
+    // }
+
+    // Meine Damen und Herren: der Shift Bit Bit-shifter
+    fn shift(kr: KeyboardReport) -> KeyboardReport {
+        let mut modifier = kr.modifier;
+        modifier |=2;
+        KeyboardReport { modifier,..kr }
+    }
+
+    // GUI Bit Bit-shifter, same for GUI Key and with a less cool name
+    fn gui(kr: KeyboardReport) -> KeyboardReport {
+        let mut modifier = kr.modifier;
+        modifier |= 8; //not sure bout that number
+        KeyboardReport { modifier,..kr }
+    }
+
     // Blinky thingy
     // let mut led_pin = pins.led.into_push_pull_output();
 
@@ -124,20 +161,77 @@ fn main() -> ! {
         let mut modifier: u8 = 0;
         let n: u8 = match letter {
             c @ 'a'..='z' => c as u8 -b'a' +4,
-            c @ 'A'..='Z' => {modifier +=2; c as u8 -b'A' +4},
+            c @ 'A'..='Z' => {modifier |=2; c as u8 -b'A' +4},
             ' ' => 0x2C,
             _ => 0,
         };
         push_keyboard_report(KeyboardReport { modifier, reserved: 0, leds: 0, keycodes: [n, 0, 0, 0, 0, 0]}).ok().unwrap_or(0);
     }
 
+    fn get_letter_report(letter: char) -> KeyboardReport { //TODO: Stuff that shit into a Restult
+        let mut modifier: u8 = 0;
+        let n: u8 = match letter {
+            c @ 'a'..='z' => c as u8 -b'a' +4,
+            c @ 'A'..='Z' => {modifier |=2; c as u8 -b'A' +4},
+            ' ' => 0x2C,
+            _ => 0,
+        };
+        KeyboardReport { modifier, reserved: 0, leds: 0, keycodes: [n,0,0,0,0,0]}
+    }
+    fn get_enter_report() -> KeyboardReport {
+        KeyboardReport{
+            modifier:0,
+            reserved:0,
+            leds:0,
+            keycodes: [0x28,0,0,0,0,0],
+        }
+    }
+    fn get_empty_report() -> KeyboardReport{
+        KeyboardReport {
+            modifier:0,
+            reserved:0,
+            leds:0,
+            keycodes: [0,0,0,0,0,0],
+        }
+    }
+
     delay.delay_ms(1_000);
+    
+    // on my system this opens a notepad so I don't fuck with my nvim as soon as I flash the pico
+    /* 
+    push_keyboard_report(
+        gui(get_letter_report(' '))
+        ).ok().unwrap_or(0);
+    delay.delay_us(1_200);
+    push_keyboard_report(get_empty_report()).ok().unwrap_or(0);
+
+    delay.delay_ms(100);
+    for c in "note".chars() {
+        delay.delay_us(1_200);
+        push_keyboard_report(
+            get_letter_report(c)
+            ).ok().unwrap_or(0);
+    }
+    delay.delay_us(1_200);
+    push_keyboard_report(get_empty_report()).ok().unwrap_or(0);
+
+    delay.delay_ms(100);
+    push_keyboard_report(
+        get_enter_report()
+        ).ok().unwrap_or(0);
+    delay.delay_us(1_200);
+    push_keyboard_report(get_empty_report()).ok().unwrap_or(0);
+
+    delay.delay_ms(300);
+    */
 
     // For all eternity (oder bis ich es abstecke)
     loop {
         for c in "PWN Stick ".chars() {
             delay.delay_us(1_200);
-            type_letter(c);
+            push_keyboard_report(
+                get_letter_report(c)
+                ).ok().unwrap_or(0);
         }
     }
     
