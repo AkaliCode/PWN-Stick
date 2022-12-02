@@ -116,6 +116,11 @@ fn main() -> ! {
 
 
 
+
+
+
+
+
     struct Instruction {
         report: KeyboardReport,
         time_us: u32,
@@ -153,30 +158,6 @@ fn main() -> ! {
         }
     }
 
-
-    // Blinky thingy, not used at the moment, but feel free to toy arround
-    // let mut led_pin = pins.led.into_push_pull_output();
-
-    // ! Veraltet, ich lass es aber fürs erste mal drinnen.
-    // ! _ vor dem Namen besagt dass es nicht verwendet wird, einfach weggeben falls ihr das Teil
-    // ! ausprobieren wollt.
-    // Weirder versuch einer ersten einfachen type_letter Funktion. Absolut nicht zufrieden mit dem
-    // Ansatz, aber für alphanumerische chars und Space funktioniert es schon mal. Timing ist das
-    // größte Proble, wenn keine USB request kommt befor der nächste Report gepusht wird, wird der
-    // Character einfach nicht getippt. Deswegen habe ich den delay in dem Beispiel einfach auf 1.2
-    // ms gesetzt obwohl die pollrate 1ms ist.
-    fn _type_letter(letter: char){
-        let mut modifier: u8 = 0;
-        let n: u8 = match letter {
-            c @ 'a'..='z' => c as u8 -b'a' +4,
-            c @ 'A'..='Z' => {modifier |=2; c as u8 -b'A' +4},
-            ' ' => 0x2C,
-            _ => 0,
-        };
-        push_keyboard_report(KeyboardReport { modifier, reserved: 0, leds: 0, keycodes: [n, 0, 0, 0, 0, 0]}).ok().unwrap_or(0);
-    }
-
-    // Makes a KeyboardReport out of an letter. 
     // IMPORTANT: not all characters are supported at the moment, and I don't check if the character you
     // enter is. If it does not have a case for that character it just returns an empty report.
     fn get_letter_report(letter: char) -> KeyboardReport { //TODO: Stuff that shit into a Restult
@@ -194,34 +175,6 @@ fn main() -> ! {
 
     delay.delay_ms(1_000);
     
-    // on my system this opens a notepad so I don't fuck with my nvim as soon as I flash the pico
-    /* 
-    push_keyboard_report(
-        gui(get_letter_report(' '))
-        ).ok().unwrap_or(0);
-    delay.delay_us(1_200);
-    push_keyboard_report(get_empty_report()).ok().unwrap_or(0);
-
-    delay.delay_ms(100);
-    for c in "note".chars() {
-        delay.delay_us(1_200);
-        push_keyboard_report(
-            get_letter_report(c)
-            ).ok().unwrap_or(0);
-    }
-    delay.delay_us(1_200);
-    push_keyboard_report(get_empty_report()).ok().unwrap_or(0);
-
-    delay.delay_ms(100);
-    push_keyboard_report(
-        get_enter_report()
-        ).ok().unwrap_or(0);
-    delay.delay_us(1_200);
-    push_keyboard_report(get_empty_report()).ok().unwrap_or(0);
-
-    delay.delay_ms(300);
-    */
-
     // For all eternity (oder bis ich es abstecke)
     loop {
         for c in "PWN Stick 0123456789 ".chars() {
