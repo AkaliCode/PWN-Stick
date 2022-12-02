@@ -112,6 +112,10 @@ fn main() -> ! {
     let core = pac::CorePeripherals::take().unwrap();
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
 
+      //======================//
+     //== Now we can start ==//
+    //======================//
+
     struct Instruction {
         report: KeyboardReport,
         time_us: u32,
@@ -218,7 +222,12 @@ fn main() -> ! {
     }
 
     delay.delay_ms(1_000);
-    // For all eternity (oder bis ich es abstecke)
+
+
+
+      //======================//
+     //== For all eternity ==//
+    //======================//
     loop {
         for c in "PWN Stick 0123456789 ".chars() {
             delay.delay_us(1_200);
@@ -226,6 +235,10 @@ fn main() -> ! {
         }
     }
 
+
+      //=================================//
+     //== push and interrupt handlers ==//
+    //=================================//
     /// We do this with interrupts disabled, to avoid a race hazard with the USB IRQ.
     fn push_keyboard_report(report: KeyboardReport) -> Result<usize, usb_device::UsbError> {
         critical_section::with(|_| unsafe {
