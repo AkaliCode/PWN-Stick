@@ -35,7 +35,7 @@ use usbd_hid::hid_class::HIDClass;
 static mut USB_DEVICE: Option<UsbDevice<hal::usb::UsbBus>> = None;
 static mut USB_BUS: Option<UsbBusAllocator<hal::usb::UsbBus>> = None;
 static mut USB_HID: Option<HIDClass<hal::usb::UsbBus>> = None;
-
+ 
 #[entry]
 fn main() -> ! {
     // mutable variable für unseren Peripheral Access Crate
@@ -116,24 +116,10 @@ fn main() -> ! {
 
 
 
-    // enum Modifier{
-    //     GUI,
-    //     ALT,
-    //     CTRL,
-    //     RGUI,
-    //     RALT,
-    //     RCTRL,
-    // }
-    //
-    // enum Instruction {
-    //     WaitMs(u32),
-    //     WaitS(u32),
-    //     Keypress(char),
-    //     Enter(),
-    //     ESC(),
-    //     BCKSPC(),
-    //     DEL(),
-    // }
+    struct Instruction {
+        report: KeyboardReport,
+        time_us: u32,
+    }
 
     // Meine Damen und Herren: der Shift Bit Bit-shifter
     fn shift(kr: KeyboardReport) -> KeyboardReport {
