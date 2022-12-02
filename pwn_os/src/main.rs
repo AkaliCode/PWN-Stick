@@ -35,7 +35,7 @@ use usbd_hid::hid_class::HIDClass;
 static mut USB_DEVICE: Option<UsbDevice<hal::usb::UsbBus>> = None;
 static mut USB_BUS: Option<UsbBusAllocator<hal::usb::UsbBus>> = None;
 static mut USB_HID: Option<HIDClass<hal::usb::UsbBus>> = None;
- 
+
 #[entry]
 fn main() -> ! {
     // mutable variable für unseren Peripheral Access Crate
@@ -83,7 +83,7 @@ fn main() -> ! {
     // Siehst du den unsafe Bums da? NICHT BERÜHREN!
     let bus_ref = unsafe { USB_BUS.as_ref().unwrap() };
     let usb_hid = HIDClass::new(bus_ref, KeyboardReport::desc(), 1); // Last thing is the poll
-                                                                      // rate in ms
+                                                                     // rate in ms
     unsafe {
         // Also only safe cus interrupts r not started
         USB_HID = Some(usb_hid);
@@ -112,79 +112,120 @@ fn main() -> ! {
     let core = pac::CorePeripherals::take().unwrap();
     let mut delay = cortex_m::delay::Delay::new(core.SYST, clocks.system_clock.freq().to_Hz());
 
-
-
-
-
-
-
-
-
-
     struct Instruction {
         report: KeyboardReport,
         time_us: u32,
     }
 
-    // Meine Damen und Herren: der Shift Bit Bit-shifter
-    fn shift(kr: KeyboardReport) -> KeyboardReport {
+    // Meine Damen und Herren: der right Shift Bit Bit-shifter
+    fn l_shift(kr: KeyboardReport) -> KeyboardReport {
         let mut modifier = kr.modifier;
-        modifier |=2;
-        KeyboardReport { modifier,..kr }
+        modifier |= 2;
+        KeyboardReport { modifier, ..kr }
     }
 
-    // GUI Bit Bit-shifter, same for GUI Key and with a less cool name
-    fn gui(kr: KeyboardReport) -> KeyboardReport {
+    //left GUI Bit Bit-shifter, same for GUI Key and with a less cool name
+    fn l_gui(kr: KeyboardReport) -> KeyboardReport {
         let mut modifier = kr.modifier;
         modifier |= 8; //not sure bout that number
-        KeyboardReport { modifier,..kr }
+        KeyboardReport { modifier, ..kr }
     }
-    
+
+    // left ALT Bit-shifter
+    fn l_alt(kr: KeyboardReport) -> KeyboardReport {
+        let mut modifier = kr.modifier;
+        modifier |= 4; //not sure bout that number
+        KeyboardReport { modifier, ..kr }
+    }
+
+    //left ctrl bit shifter
+    fn l_ctrl(kr: KeyboardReport) -> KeyboardReport {
+        let mut modifier = kr.modifier;
+        modifier |= 1; //not sure bout that number
+        KeyboardReport { modifier, ..kr }
+    }
+
+    // r_shift bit shifter
+    fn r_shift(kr: KeyboardReport) -> KeyboardReport {
+        let mut modifier = kr.modifier;
+        modifier |= 32;
+        KeyboardReport { modifier, ..kr }
+    }
+
+    // right GUI Bit Bit-shifter, same for GUI Key and with a less cool name
+    fn r_gui(kr: KeyboardReport) -> KeyboardReport {
+        let mut modifier = kr.modifier;
+        modifier |= 128; //not sure bout that number
+        KeyboardReport { modifier, ..kr }
+    }
+
+    //right ALT Bit-shifter
+    fn r_alt(kr: KeyboardReport) -> KeyboardReport {
+        let mut modifier = kr.modifier;
+        modifier |= 64; //not sure bout that number
+        KeyboardReport { modifier, ..kr }
+    }
+
+    //right ctrl Bit shifter
+    fn r_ctrl(kr: KeyboardReport) -> KeyboardReport {
+        let mut modifier = kr.modifier;
+        modifier |= 16; //not sure bout that number
+        KeyboardReport { modifier, ..kr }
+    }
+
+
+
     // Gets you a simple Enter Report
     fn get_enter_report() -> KeyboardReport {
-        KeyboardReport{
-            keycodes: [0x28,0,0,0,0,0],
+        KeyboardReport {
+            keycodes: [0x28, 0, 0, 0, 0, 0],
             ..get_empty_report()
         }
     }
 
     //gives back an empty report
-    fn get_empty_report() -> KeyboardReport{
+    fn get_empty_report() -> KeyboardReport {
         KeyboardReport {
-            modifier:0,
-            reserved:0,
-            leds:0,
-            keycodes: [0,0,0,0,0,0],
+            modifier: 0,
+            reserved: 0,
+            leds: 0,
+            keycodes: [0, 0, 0, 0, 0, 0],
         }
     }
 
+    // Makes a KeyboardReport out of an letter.
     // IMPORTANT: not all characters are supported at the moment, and I don't check if the character you
     // enter is. If it does not have a case for that character it just returns an empty report.
-    fn get_letter_report(letter: char) -> KeyboardReport { //TODO: Stuff that shit into a Restult
+    fn get_letter_report(letter: char) -> KeyboardReport {
+        //TODO: Stuff that shit into a Restult
         let mut modifier: u8 = 0;
         let n: u8 = match letter {
-            c @ 'a'..='z' => c as u8 -b'a' +4,
-            c @ 'A'..='Z' => {modifier |=2; c as u8 -b'A' +4},
-            d @ '1'..='9' => d as u8 -b'1' +0x1E,
+            c @ 'a'..='z' => c as u8 - b'a' + 4,
+            c @ 'A'..='Z' => {
+                modifier |= 2;
+                c as u8 - b'A' + 4
+            }
+            d @ '1'..='9' => d as u8 - b'1' + 0x1E,
             '0' => 0x27,
             ' ' => 0x2C,
             _ => 0,
         };
-        KeyboardReport { modifier, keycodes: [n,0,0,0,0,0], ..get_empty_report()}
+        KeyboardReport {
+            modifier,
+            keycodes: [n, 0, 0, 0, 0, 0],
+            ..get_empty_report()
+        }
     }
 
     delay.delay_ms(1_000);
-    
     // For all eternity (oder bis ich es abstecke)
     loop {
         for c in "PWN Stick 0123456789 ".chars() {
             delay.delay_us(1_200);
-            push_keyboard_report(
-                get_letter_report(c)
-                ).ok().unwrap_or(0);
+            push_keyboard_report(get_letter_report(c)).ok().unwrap_or(0);
         }
     }
-    
+
     /// We do this with interrupts disabled, to avoid a race hazard with the USB IRQ.
     fn push_keyboard_report(report: KeyboardReport) -> Result<usize, usb_device::UsbError> {
         critical_section::with(|_| unsafe {
@@ -200,7 +241,7 @@ fn main() -> ! {
     #[allow(non_snake_case)]
     #[interrupt]
     fn USBCTRL_IRQ() {
-        unsafe{
+        unsafe {
             // Handle USB request
             let usb_dev = USB_DEVICE.as_mut().unwrap();
             let usb_hid = USB_HID.as_mut().unwrap();
