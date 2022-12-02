@@ -148,16 +148,38 @@ fn main() -> ! {
         modifier |= 8; //not sure bout that number
         KeyboardReport { modifier,..kr }
     }
+    
+    // Gets you a simple Enter Report
+    fn get_enter_report() -> KeyboardReport {
+        KeyboardReport{
+            keycodes: [0x28,0,0,0,0,0],
+            ..get_empty_report()
+        }
+    }
 
-    // Blinky thingy
+    //gives back an empty report
+    fn get_empty_report() -> KeyboardReport{
+        KeyboardReport {
+            modifier:0,
+            reserved:0,
+            leds:0,
+            keycodes: [0,0,0,0,0,0],
+        }
+    }
+
+
+    // Blinky thingy, not used at the moment, but feel free to toy arround
     // let mut led_pin = pins.led.into_push_pull_output();
 
+    // ! Veraltet, ich lass es aber fürs erste mal drinnen.
+    // ! _ vor dem Namen besagt dass es nicht verwendet wird, einfach weggeben falls ihr das Teil
+    // ! ausprobieren wollt.
     // Weirder versuch einer ersten einfachen type_letter Funktion. Absolut nicht zufrieden mit dem
     // Ansatz, aber für alphanumerische chars und Space funktioniert es schon mal. Timing ist das
     // größte Proble, wenn keine USB request kommt befor der nächste Report gepusht wird, wird der
     // Character einfach nicht getippt. Deswegen habe ich den delay in dem Beispiel einfach auf 1.2
     // ms gesetzt obwohl die pollrate 1ms ist.
-    fn type_letter(letter: char){
+    fn _type_letter(letter: char){
         let mut modifier: u8 = 0;
         let n: u8 = match letter {
             c @ 'a'..='z' => c as u8 -b'a' +4,
@@ -168,6 +190,9 @@ fn main() -> ! {
         push_keyboard_report(KeyboardReport { modifier, reserved: 0, leds: 0, keycodes: [n, 0, 0, 0, 0, 0]}).ok().unwrap_or(0);
     }
 
+    // Makes a KeyboardReport out of an letter. 
+    // IMPORTANT: not all characters are supported at the moment, and I don't check if the character you
+    // enter is. If it does not have a case for that character it just returns an empty report.
     fn get_letter_report(letter: char) -> KeyboardReport { //TODO: Stuff that shit into a Restult
         let mut modifier: u8 = 0;
         let n: u8 = match letter {
@@ -176,23 +201,7 @@ fn main() -> ! {
             ' ' => 0x2C,
             _ => 0,
         };
-        KeyboardReport { modifier, reserved: 0, leds: 0, keycodes: [n,0,0,0,0,0]}
-    }
-    fn get_enter_report() -> KeyboardReport {
-        KeyboardReport{
-            modifier:0,
-            reserved:0,
-            leds:0,
-            keycodes: [0x28,0,0,0,0,0],
-        }
-    }
-    fn get_empty_report() -> KeyboardReport{
-        KeyboardReport {
-            modifier:0,
-            reserved:0,
-            leds:0,
-            keycodes: [0,0,0,0,0,0],
-        }
+        KeyboardReport { modifier, keycodes: [n,0,0,0,0,0], ..get_empty_report()}
     }
 
     delay.delay_ms(1_000);
